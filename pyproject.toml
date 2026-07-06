@@ -1,0 +1,22 @@
+[project]
+name = "arch-compliance"
+version = "0.1.0"
+description = "CLI agent that scores a solution architecture document against an org's architecture standards"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.40.0",
+    "pymupdf>=1.24.0",
+    "python-docx>=1.1.0",
+    "openpyxl>=3.1.0",
+    "pillow>=10.0.0",
+]
+
+[project.scripts]
+arch-compliance = "arch_compliance.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
