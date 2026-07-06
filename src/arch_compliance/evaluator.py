@@ -49,13 +49,8 @@ def evaluate(
     architecture: ExtractedDocument, rubric: list[RubricItem], model: str
 ) -> list[EvalResult]:
     text = architecture.full_text[:MAX_TEXT_CHARS]
-    image_blocks = [
-        {
-            "type": "image",
-            "source": {"type": "base64", "media_type": "image/png", "data": p.image_b64},
-        }
-        for p in architecture.pages[:MAX_IMAGE_PAGES]
-        if p.image_b64
+    image_b64_list = [
+        p.image_b64 for p in architecture.pages[:MAX_IMAGE_PAGES] if p.image_b64
     ]
 
     results: list[EvalResult] = []
@@ -72,7 +67,7 @@ def evaluate(
             model=model,
             system=EVAL_SYSTEM_PROMPT,
             user_text=user_text,
-            image_blocks=image_blocks,
+            image_b64_list=image_b64_list,
             max_tokens=4000,
         )
         raw_by_id = {r["id"]: r for r in raw}

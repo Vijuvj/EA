@@ -1,18 +1,21 @@
 # arch-compliance
 
 A CLI agent that scores a solution architecture document against your
-organization's architecture standards, using Claude to grade each requirement
+organization's architecture standards, using an LLM to grade each requirement
 and deterministic code to aggregate the final compliance percentage.
+
+Talks to any OpenAI-compatible chat-completions endpoint (OpenAI, Azure
+OpenAI, Core42/G42 Compass, self-hosted gateways, etc.).
 
 ## How it works
 
 1. **`normalize-standards`** — reads one or more standards documents (PDF,
-   Word, or Excel) and asks Claude to normalize them into a canonical rubric:
-   a JSON list of atomic, checkable requirements, each with a category,
-   mandatory flag, and weight (1-5).
+   Word, or Excel) and asks the model to normalize them into a canonical
+   rubric: a JSON list of atomic, checkable requirements, each with a
+   category, mandatory flag, and weight (1-5).
 2. **`evaluate`** — reads a solution architecture document (PDF or Word,
-   including diagrams on PDF pages, which are sent to Claude as images) and
-   grades it against every rubric item, producing a verdict
+   including diagrams on PDF pages, sent to the model as images) and grades
+   it against every rubric item, producing a verdict
    (`pass`/`partial`/`fail`/`not_applicable`) with evidence and rationale for
    each.
 3. Scoring is aggregated in code (not by the LLM): `pass` = full weight,
@@ -24,7 +27,14 @@ and deterministic code to aggregate the final compliance percentage.
 
 ```bash
 pip install -e .
-export ANTHROPIC_API_KEY=sk-ant-...
+
+# Point at your OpenAI-compatible endpoint, e.g. Core42/G42 Compass:
+export COMPASS_API_KEY=...
+export COMPASS_BASE_URL=https://<your-compass-endpoint>/v1
+export ARCH_COMPLIANCE_MODEL=<model name available on your Compass account>
+
+# Or, to use OpenAI directly instead:
+# export OPENAI_API_KEY=sk-...
 ```
 
 ## Usage
@@ -49,7 +59,10 @@ standards documents change.
 
 ## Notes / limitations
 
-- `ARCH_COMPLIANCE_MODEL` env var overrides the default model.
+- `ARCH_COMPLIANCE_MODEL` env var selects the model (must be a model available
+  on your endpoint/account, and must support image input to grade diagrams).
+- `COMPASS_API_KEY`/`COMPASS_BASE_URL` (or `OPENAI_API_KEY`/`OPENAI_BASE_URL`)
+  configure which OpenAI-compatible endpoint is used.
 - Architecture text is truncated to ~60k characters and diagrams to the first
   20 PDF pages per call; very large documents may need to be split.
 - Review the generated `rubric.json` before relying on it — spot-check that
