@@ -68,3 +68,41 @@ standards documents change.
 - Review the generated `rubric.json` before relying on it — spot-check that
   requirements were split atomically and weighted sensibly, since it's the
   basis for every future score.
+
+# prr-readiness
+
+A CLI for the change team to assess a change/service against SRE Production
+Readiness Review (PRR) criteria before the `02 Production Readiness Review`
+step of the release flow, and get a Ready / Conditional / Not Ready gate
+decision to bring into TAB/CAB.
+
+It's built on the same engine as `arch-compliance` (LLM grades each
+criterion against the change docs, code aggregates the score), plus:
+
+- A **built-in default rubric** (`prr_readiness/default_rubric.py`) sourced
+  from this org's G-CAF-092 (Go-Live Gateway) exit criteria and G-CAF-073
+  (NFR Contract) mandatory checks — covering implementation compliance,
+  security, NFR/SLO validation, monitoring & alerting, support model /
+  on-call / runbooks, rollout & rollback, dependencies, testing artifacts,
+  commercial, and documentation.
+- A **gate decision**: any mandatory criterion that fails blocks go-live
+  (`NOT READY`); a partially-met mandatory criterion is `CONDITIONAL`;
+  otherwise `READY`. Non-mandatory criteria only move the readiness
+  percentage, not the gate.
+
+## Usage
+
+```bash
+# Assess a change against the built-in G-CAF PRR rubric
+prr-readiness assess --change release-notes/payments-v2.docx --format md --output prr-report.md
+
+# Or bring your own SRE readiness checklist instead of the default rubric
+prr-readiness normalize-criteria --input standards/sre-readiness-checklist.pdf --output criteria.json
+prr-readiness assess --change release-notes/payments-v2.docx --rubric criteria.json
+```
+
+The `assess` command exits non-zero when the gate decision is `NOT READY`,
+so it can be wired into a CI/CD gate ahead of the staged/canary go-live step.
+Same environment variables and limitations as `arch-compliance` apply
+(`ARCH_COMPLIANCE_MODEL`, `COMPASS_API_KEY`/`COMPASS_BASE_URL` or
+`OPENAI_API_KEY`/`OPENAI_BASE_URL`, ~60k char / 20 page truncation).

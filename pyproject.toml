@@ -13,6 +13,7 @@ dependencies = [
 
 [project.scripts]
 arch-compliance = "arch_compliance.cli:main"
+prr-readiness = "prr_readiness.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
