@@ -109,3 +109,34 @@ so it can be wired into a CI/CD gate ahead of the staged/canary go-live step.
 Same environment variables and limitations as `arch-compliance` apply
 (`ARCH_COMPLIANCE_MODEL`, `COMPASS_API_KEY`/`COMPASS_BASE_URL` or
 `OPENAI_API_KEY`/`OPENAI_BASE_URL`, ~60k char / 20 page truncation).
+
+## Web application
+
+The change team can also run PRR assessments from a browser instead of the CLI:
+upload a change doc, get back the gate decision, category scores, and findings,
+without touching a terminal.
+
+```bash
+pip install -e ".[web]"
+prr-readiness-web
+# then open http://localhost:8000
+```
+
+- **`POST /api/assess`** — upload a change document (+ optional custom rubric
+  JSON) and get back a `job_id`.
+- **`POST /api/normalize-criteria`** — upload standards document(s) and get
+  back a `job_id` for building a custom rubric.
+- **`GET /api/jobs/{job_id}`** — poll for `pending` → `running` → `done`/`error`.
+
+Both endpoints run as background jobs rather than blocking the request,
+since grading a document against a rubric is an LLM call that can take
+10-30+ seconds. The static frontend (`prr_readiness/static/`) is plain
+HTML/CSS/JS with no build step or external dependencies — it submits a job
+and polls the status endpoint until it resolves.
+
+The server-side `OPENAI_API_KEY`/`COMPASS_API_KEY` etc. are read from the
+environment the server runs in — they are never exposed to the browser.
+Configure host/port via `PRR_WEB_HOST` / `PRR_WEB_PORT` (default
+`0.0.0.0:8000`); this is a single-process demo server (in-memory job store,
+no auth) — put it behind your org's auth/reverse proxy before exposing it
+beyond local use.
