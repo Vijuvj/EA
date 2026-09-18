@@ -137,6 +137,52 @@ and polls the status endpoint until it resolves.
 The server-side `OPENAI_API_KEY`/`COMPASS_API_KEY` etc. are read from the
 environment the server runs in — they are never exposed to the browser.
 Configure host/port via `PRR_WEB_HOST` / `PRR_WEB_PORT` (default
-`0.0.0.0:8000`); this is a single-process demo server (in-memory job store,
-no auth) — put it behind your org's auth/reverse proxy before exposing it
-beyond local use.
+`0.0.0.0:8000`). This is a single-process server (in-memory job store —
+keep replicas at 1, or swap `_jobs` for Redis if you need more).
+
+**Authentication:** set `PRR_WEB_USERNAME` / `PRR_WEB_PASSWORD` to turn on
+HTTP Basic Auth for every route. If either is unset, the server starts with
+no authentication and prints a warning — fine for `localhost`, never for a
+public URL, since an unauthenticated deployment lets anyone with the link
+submit jobs against your LLM API key.
+
+## Deploying it as a public web tool
+
+The app is a standard FastAPI service (`Dockerfile` at the repo root), so
+any container host works. Steps for a permanent public URL:
+
+1. **Push this repo (or just this branch) to your own git remote** if you
+   haven't already — most hosts deploy straight from a connected repo.
+
+2. **Set the required environment variables on the host** (never commit
+   these):
+   - `OPENAI_API_KEY` (or `COMPASS_API_KEY` + `COMPASS_BASE_URL`)
+   - `ARCH_COMPLIANCE_MODEL` — a model available on your endpoint that
+     supports image input
+   - `PRR_WEB_USERNAME` / `PRR_WEB_PASSWORD` — required for any public
+     deployment (see Authentication above)
+
+3. **Deploy the `Dockerfile`** on whichever host you prefer:
+   - **Render**: New → Web Service → connect the repo → it auto-detects
+     the `Dockerfile` → add the env vars above → Deploy. You get
+     `https://<your-app>.onrender.com`.
+   - **Railway**: `railway init` in the repo, then `railway up` (or connect
+     the repo in the dashboard) → add the env vars → you get
+     `https://<your-app>.up.railway.app`.
+   - **Fly.io**: `fly launch` (detects the `Dockerfile` and asks a few
+     questions) → `fly secrets set OPENAI_API_KEY=... PRR_WEB_USERNAME=...
+     PRR_WEB_PASSWORD=...` → `fly deploy` → you get
+     `https://<your-app>.fly.dev`.
+   - **Any other Docker host** (Cloud Run, ECS, a VM, etc.): `docker build
+     -t prr-readiness . && docker run -p 8000:8000 -e OPENAI_API_KEY=...
+     -e PRR_WEB_USERNAME=... -e PRR_WEB_PASSWORD=... prr-readiness`, then
+     point that host's load balancer/ingress at container port `8000`
+     (the container also honors a `PORT` env var if the host sets one,
+     e.g. Cloud Run).
+
+4. **Verify:** open the URL, confirm the browser prompts for the basic-auth
+   credentials, log in, and run a small assessment end-to-end before
+   sharing the link.
+
+5. **Share the link** — anyone with the URL and credentials can now use the
+   tool from a browser with no local setup.

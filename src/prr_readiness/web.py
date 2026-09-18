@@ -11,8 +11,11 @@ Or:       prr-readiness-web (installed via the `web` extra)
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import os
+import secrets
+import sys
 import tempfile
 import uuid
 from dataclasses import dataclass
@@ -20,7 +23,8 @@ from pathlib import Path
 from threading import Lock
 from typing import Literal
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -37,6 +41,43 @@ from .gate import decide
 STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(title="PRR Readiness")
+
+BASIC_AUTH_USERNAME = os.environ.get("PRR_WEB_USERNAME")
+BASIC_AUTH_PASSWORD = os.environ.get("PRR_WEB_PASSWORD")
+
+if not (BASIC_AUTH_USERNAME and BASIC_AUTH_PASSWORD):
+    print(
+        "WARNING: PRR_WEB_USERNAME/PRR_WEB_PASSWORD are not set — the app is "
+        "running with NO AUTHENTICATION. Set both before exposing this "
+        "beyond localhost, or anyone with the URL can submit jobs against "
+        "your LLM API key.",
+        file=sys.stderr,
+    )
+
+
+@app.middleware("http")
+async def basic_auth(request: Request, call_next):
+    if not (BASIC_AUTH_USERNAME and BASIC_AUTH_PASSWORD):
+        return await call_next(request)
+
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Basic "):
+        try:
+            decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
+            username, _, password = decoded.partition(":")
+        except Exception:  # noqa: BLE001 - any malformed header is just unauthenticated
+            username, password = "", ""
+        if secrets.compare_digest(username, BASIC_AUTH_USERNAME) and secrets.compare_digest(
+            password, BASIC_AUTH_PASSWORD
+        ):
+            return await call_next(request)
+
+    return Response(
+        status_code=401,
+        headers={"WWW-Authenticate": 'Basic realm="PRR Readiness"'},
+        content="Authentication required",
+    )
+
 
 JobStatus = Literal["pending", "running", "done", "error"]
 
