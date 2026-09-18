@@ -11,8 +11,17 @@ dependencies = [
     "pillow>=10.0.0",
 ]
 
+[project.optional-dependencies]
+web = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.29.0",
+    "python-multipart>=0.0.9",
+]
+
 [project.scripts]
 arch-compliance = "arch_compliance.cli:main"
+prr-readiness = "prr_readiness.cli:main"
+prr-readiness-web = "prr_readiness.web:main"
 
 [build-system]
 requires = ["setuptools>=68"]
@@ -20,3 +29,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+prr_readiness = ["static/*"]
