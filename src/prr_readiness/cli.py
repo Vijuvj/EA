@@ -13,11 +13,6 @@ from . import report
 from .default_rubric import DEFAULT_RUBRIC
 from .gate import decide
 
-NORMALIZE_CRITERIA_SYSTEM_HINT = (
-    "SRE production-readiness criteria (monitoring/alerting, capacity, rollback, "
-    "runbooks/on-call, SLOs/error budget, dependencies, security, data safety, testing)"
-)
-
 
 def cmd_normalize_criteria(args: argparse.Namespace) -> None:
     docs = [extractors.extract(p, render_images=False) for p in args.input]
@@ -86,7 +81,7 @@ def main() -> None:
     )
     p_assess.add_argument(
         "--rubric",
-        help="Rubric JSON from normalize-criteria (default: built-in G-CAF PRR rubric)",
+        help="Rubric JSON from normalize-criteria (default: built-in SRE Workbook PRR rubric)",
     )
     p_assess.add_argument("--output", help="Path to write the report (default: stdout)")
     p_assess.add_argument("--format", choices=["md", "json"], default="md")

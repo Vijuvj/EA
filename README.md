@@ -79,12 +79,15 @@ decision to bring into TAB/CAB.
 It's built on the same engine as `arch-compliance` (LLM grades each
 criterion against the change docs, code aggregates the score), plus:
 
-- A **built-in default rubric** (`prr_readiness/default_rubric.py`) sourced
-  from this org's G-CAF-092 (Go-Live Gateway) exit criteria and G-CAF-073
-  (NFR Contract) mandatory checks — covering implementation compliance,
-  security, NFR/SLO validation, monitoring & alerting, support model /
-  on-call / runbooks, rollout & rollback, dependencies, testing artifacts,
-  commercial, and documentation.
+- A **built-in default rubric** (`prr_readiness/default_rubric.py`) grounded
+  in Google's *The Site Reliability Workbook* (O'Reilly, 2018) — principally
+  Ch.18 "SRE Engagement Model" (which defines the PRR itself), plus Ch.2
+  Implementing SLOs, Ch.4 Monitoring, Ch.5 Alerting on SLOs, Ch.6 Eliminating
+  Toil, Ch.8 On-Call, Ch.9 Incident Response, Ch.11 Managing Load, and Ch.16
+  Canarying Releases. It's organization-agnostic — no internal policy or
+  contract is referenced — covering SLOs/error budget, monitoring, alerting,
+  toil, on-call, incident response, capacity/load, rollout safety,
+  dependencies, and documentation.
 - A **gate decision**: any mandatory criterion that fails blocks go-live
   (`NOT READY`); a partially-met mandatory criterion is `CONDITIONAL`;
   otherwise `READY`. Non-mandatory criteria only move the readiness
@@ -93,7 +96,7 @@ criterion against the change docs, code aggregates the score), plus:
 ## Usage
 
 ```bash
-# Assess a change against the built-in G-CAF PRR rubric
+# Assess a change against the built-in SRE Workbook PRR rubric
 prr-readiness assess --change release-notes/payments-v2.docx --format md --output prr-report.md
 
 # Or bring your own SRE readiness checklist instead of the default rubric

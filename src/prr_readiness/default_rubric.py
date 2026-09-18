@@ -1,56 +1,55 @@
 """Built-in SRE Production Readiness Review (PRR) rubric.
 
-Sourced from this org's G-CAF-092 (Go-Live Gateway) exit criteria and
-G-CAF-073 (NFR Contract) mandatory checks, so a change team can run an
-assessment without first authoring a standards doc. Teams with their own
-SRE readiness checklist should instead run `prr-readiness normalize-criteria`
-against it and pass the resulting rubric to `assess --rubric`.
+Sourced from Google's *The Site Reliability Workbook* (O'Reilly, 2018),
+principally Chapter 18 "SRE Engagement Model" (which defines the PRR as the
+gate SRE runs before accepting on-call/operational ownership of a service),
+plus the chapters that define what "ready" means in each dimension the PRR
+checks: Ch.2 Implementing SLOs, Ch.4 Monitoring, Ch.5 Alerting on SLOs,
+Ch.6 Eliminating Toil, Ch.8 On-Call, Ch.9 Incident Response,
+Ch.11 Managing Load, Ch.16 Canarying Releases.
+(https://sre.google/workbook/ — CC BY-NC-ND 4.0, paraphrased here, not
+reproduced.)
+
+This is intentionally organization-agnostic — no internal policy, standard,
+or contract is referenced. A team with its own SRE readiness checklist
+should instead run `prr-readiness normalize-criteria` against it and pass
+the resulting rubric to `assess --rubric`.
 """
 from __future__ import annotations
 
 from arch_compliance.rubric import RubricItem
 
 DEFAULT_RUBRIC: list[RubricItem] = [
-    # Implementation compliance
-    RubricItem("IMP-1", "Deployed implementation matches the approved design from the Design Gateway", "implementation", True, 4),
-    RubricItem("IMP-2", "Deployed technology stack matches approved specs; no Containment/Retired tech in production without an ARB exception", "implementation", True, 4),
-    # Security
-    RubricItem("SEC-1", "Penetration test / vulnerability assessment completed and passed", "security", True, 5),
-    RubricItem("SEC-2", "Zero Trust and other required security controls validated", "security", True, 5),
-    RubricItem("SEC-3", "Encryption at rest and in transit verified; authentication/authorization functional; audit logging operational", "security", True, 5),
-    RubricItem("SEC-4", "SAST, DAST, dependency scanning, container scanning, and runtime protection tools integrated and operational", "security", True, 4),
-    # NFR / SLO validation
-    RubricItem("NFR-1", "Availability target for the service's criticality tier is validated (e.g. 99.95%/99.9%/99.5%/99.0%)", "reliability", True, 5),
-    RubricItem("NFR-2", "Performance targets validated (interactive APIs <500ms p95, real-time <100ms, batch per PBC)", "reliability", True, 4),
-    RubricItem("NFR-3", "Scalability validated for the service's criticality tier (auto-scaling verified or capacity plan documented)", "reliability", True, 4),
-    RubricItem("NFR-4", "Recovery tested against RTO/RPO targets for the criticality tier", "reliability", True, 5),
-    RubricItem("NFR-5", "Error budget and SLO burn-rate status reviewed; no active release freeze from budget exhaustion", "reliability", True, 5),
-    # Monitoring / observability / alerting
-    RubricItem("MON-1", "Monitoring and observability tooling operational for the service", "observability", True, 5),
-    RubricItem("MON-2", "SLA/SLO-based alerting configured and routed to the owning team", "observability", True, 5),
-    RubricItem("MON-3", "Structured logging with correlation IDs and distributed tracing operational", "observability", True, 3),
-    RubricItem("MON-4", "Dashboards published for key SLIs (latency, errors, saturation, traffic)", "observability", False, 2),
-    # Support model / on-call / runbooks
-    RubricItem("SUP-1", "Support RACI documented and agreed, with clear L1/L2/L3 responsibilities", "operations", True, 4),
-    RubricItem("SUP-2", "Runbooks published AND tested (not just written) for known failure modes", "operations", True, 5),
-    RubricItem("SUP-3", "Escalation procedures defined", "operations", True, 3),
-    RubricItem("SUP-4", "On-call rotation established for the service", "operations", True, 4),
-    RubricItem("SUP-5", "Knowledge transfer completed where a vendor provides L3 support", "operations", False, 2),
-    # Rollout / rollback
-    RubricItem("ROL-1", "Staged or canary rollout plan defined with automated health checks against SLIs", "rollout", True, 4),
-    RubricItem("ROL-2", "Automated rollback mechanism defined and tested", "rollout", True, 5),
-    # Dependencies / integration
-    RubricItem("DEP-1", "GovDX APIs (or equivalent internal APIs) registered and discoverable/functional", "dependencies", True, 3),
-    RubricItem("DEP-2", "Event schemas registered in the schema registry", "dependencies", True, 3),
-    RubricItem("DEP-3", "Anti-corruption layer (ACL) operational and consumer-driven contract tests passing, where applicable (Buy/Outsource PBCs)", "dependencies", False, 3),
-    # Testing artifacts
-    RubricItem("TST-1", "Performance test report available as an artifact", "testing", True, 3),
-    RubricItem("TST-2", "Availability/chaos test report available as an artifact", "testing", True, 3),
-    RubricItem("TST-3", "DR/BC test results available as an artifact", "testing", True, 3),
-    # Cost / SLA / vendor
-    RubricItem("SLA-1", "External/internal SLA targets defined, measurable, and dashboarded", "commercial", False, 2),
-    RubricItem("SLA-2", "Cost allocation model approved for the service", "commercial", False, 2),
-    RubricItem("SLA-3", "Vendor onboarding checklist complete and contract SLA alignment confirmed, where applicable", "commercial", False, 2),
-    # Documentation
-    RubricItem("DOC-1", "Deployment documentation, technology/version compliance confirmation, and security validation report published", "documentation", True, 3),
+    # SLOs & error budget — Ch.2 Implementing SLOs
+    RubricItem("SLO-1", "SLIs are defined for the service's critical user journeys (availability, latency, or other measurable indicators)", "slo", True, 5),
+    RubricItem("SLO-2", "SLOs (targets on those SLIs) are documented and agreed with stakeholders", "slo", True, 5),
+    RubricItem("SLO-3", "An error budget is defined from the SLO, with an agreed policy for what happens when it's exhausted (e.g. a release freeze)", "slo", True, 4),
+    # Monitoring — Ch.4 Monitoring
+    RubricItem("MON-1", "Monitoring measures the defined SLIs directly (symptom-based), not just proxy/cause signals", "monitoring", True, 5),
+    RubricItem("MON-2", "Monitoring covers the service's key dependencies, not only the service itself", "monitoring", True, 3),
+    RubricItem("MON-3", "Dashboards exist for the SLIs and are usable during an incident (a human can tell in seconds whether the service is healthy)", "monitoring", False, 3),
+    # Alerting — Ch.5 Alerting on SLOs
+    RubricItem("ALR-1", "Alerts are defined on SLO burn rate (or an equivalent symptom-based condition), not just static thresholds on causes", "alerting", True, 5),
+    RubricItem("ALR-2", "Alerting balances precision, recall, and detection time — alerts page only when the error budget is genuinely at risk, with fast-burn and slow-burn windows", "alerting", True, 4),
+    RubricItem("ALR-3", "Alerts route to the team that will actually respond (the right pager, not a shared inbox)", "alerting", True, 4),
+    # Toil — Ch.6 Eliminating Toil
+    RubricItem("TOIL-1", "Manual, repetitive operational tasks needed to run the service have been identified and, where possible, automated", "toil", False, 2),
+    # On-call — Ch.8 On-Call
+    RubricItem("ONCALL-1", "A sustainable on-call rotation is established for the service, with defined roles and coverage", "on-call", True, 4),
+    RubricItem("ONCALL-2", "Escalation policy and secondary/backup on-call are defined", "on-call", True, 3),
+    RubricItem("ONCALL-3", "On-call engineers have tested runbooks/playbooks for the service's known failure modes — not just written procedures, but ones that have actually been exercised", "on-call", True, 5),
+    # Incident response — Ch.9 Incident Response
+    RubricItem("INC-1", "An incident management process (roles such as incident commander, communication lead) is in place and known to the on-call team", "incident-response", True, 3),
+    RubricItem("INC-2", "A postmortem process exists so operational learnings from this service's incidents will be captured (Ch.10 Postmortem Culture)", "incident-response", False, 2),
+    # Managing load / capacity — Ch.11 Managing Load, Ch.12 NALSD
+    RubricItem("CAP-1", "Capacity has been planned or load/stress tested against expected traffic, with headroom for growth and failover", "capacity", True, 4),
+    RubricItem("CAP-2", "The service degrades gracefully under overload (load shedding, backpressure, or equivalent) rather than failing hard", "capacity", False, 3),
+    # Rollout safety — Ch.16 Canarying Releases
+    RubricItem("ROL-1", "Releases are canaried or staged with automated evaluation against the service's SLIs before full rollout", "rollout", True, 4),
+    RubricItem("ROL-2", "A tested rollback path exists so a bad release can be reverted quickly", "rollout", True, 5),
+    # Dependencies & architecture — Ch.18 SRE Engagement Model (PRR scope)
+    RubricItem("DEP-1", "The service's critical dependencies are identified, and their own reliability/SLOs are understood to be sufficient to meet this service's SLO", "dependencies", True, 3),
+    RubricItem("DEP-2", "Single points of failure in the architecture have been identified and either mitigated or explicitly accepted as a known risk", "dependencies", True, 3),
+    # Documentation — Ch.18 SRE Engagement Model (PRR scope)
+    RubricItem("DOC-1", "Architecture and operational documentation (design, data flows, deployment process) is current and accessible to the on-call team", "documentation", True, 3),
 ]
